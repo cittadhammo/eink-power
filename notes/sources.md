@@ -134,26 +134,68 @@ in the default configuration.
   https://www.crowdsupply.com/modos-tech/modos-paper-monitor/
   https://www.crowdsupply.com/modos-tech/modos-flow/updates/comparing-the-paper-dev-kit-with-flow
 
-## The board can report its own rails, and ours is connected
+## The board's own telemetry: present in hardware, hidden in firmware
 
 The claim that this display offers no telemetry is only true of the *Linux*
 side. The board carries **three INA3221** rail monitors, polled every 100 ms by
-the STM32H750, and the firmware's serial shell has a command that prints
-per-rail power as current/average/**max** in mW, grouped as `MCU + IO`,
-`FPGA DDR`, `FPGA CORE`, `VIDEO IN`, `EPD HV` — the same five groups as the
-table above.
+the STM32H750 (`fw/User/power.c`), and the firmware has a shell command that
+prints per-rail power as current/average/**max** in mW, grouped as `MCU + IO`,
+`FPGA DDR`, `FPGA CORE`, `VIDEO IN`, `EPD HV` — the same five groups as
+Modos' published table.
 
-  - `fw/User/power.c` — the INA3221 polling loop, 100 ms period
-  - `fw/User/shell/shell_cmds.c` — the shell command that prints the rails
-  - The shell is reached over the USB CDC serial device; the README says
-    "on Linux probably /dev/ttyACM0"
+**But that command is compiled out of the release build.** The function
+`shell_sensor()` sits behind `#ifdef GLIDER_DIAGNOSTIC_SHELL`
+(`fw/User/shell/shell_cmds.c`), and our board rejects it:
 
-On this machine that device exists right now:
+    # sensor
+    Invalid command, type 'help' for help
 
-    Bus 007 Device 006: ID 1209:ae86 Generic Glider
-    crw-rw---- 1 root uucp 166, 0 /dev/ttyACM0
+The complete command set in build 0.1 (Sep 23 2026) is `help`, `power`,
+`setcfg`, `setres`, `syslog`, `ver`. `power` is `[status|off]` and reports the
+suspend state machine, not numbers.
 
-It is mode 0660 owned by group `uucp`, and the user is in neither `uucp` nor
-`dialout`, so reading it needs a group change or root. That is the one thing
-standing between us and direct per-rail measurement, which would answer the
-refresh-cost and standby questions without unplugging anything.
+So per-rail watts would require building and flashing the firmware from the
+public Glider repo with `-DGLIDER_DIAGNOSTIC_SHELL`. That is a real project
+with real risk, and it is the only route to the per-rail breakdown.
+
+### What the board will tell us for free
+
+`syslog` is readable and confirms the hardware, the power contract, and the
+idle rail voltages. From our board, at startup:
+
+    [ 0.414]  INA 40: Mfg ID = 5449, Die ID = 3220
+    [ 0.415]  INA 41: Mfg ID = 5449, Die ID = 3220
+    [ 0.416]  INA 42: Mfg ID = 5449, Die ID = 3220
+    [ 0.676]  C0 entering state PD_STATE_SNK_READY
+    [ 0.676]  Setting input current limit to 5000 V 1500 mA
+    [ 1.289]  Bitstream loading took 593 ms
+    [ 1.597]  VN: 0.06 V
+    [ 1.797]  VN: -15.02 V     VGL: -20.34 V
+    [ 1.997]  VP: 14.91 V      VGH: 25.06 V
+    [ 2.197]  VCOM: -2.35 V
+    [ 2.219]  Input status 19 debug 8e, measured 1600 x 1200, total 1680 x 1242
+
+Three INA3221s present (TI, die 3220), panel timing 1600x1200 of 1680x1242,
+and the EPD high-voltage rails sitting energised at +/-15 V and +25 V — the
+92.7 mW of "EPD HV" in Modos' active-mode table, still being drawn to hold a
+still image.
+
+**The `5.0 V / 1.5 A` reading is the PD contract, now confirmed from the board
+itself**: the log shows the board negotiating `Req C0 [1] 5000mV 1500mA` and
+then setting its input current limit to exactly that. It is the ceiling the
+board asks for (7.5 W), never the live draw — which is why the UCSI
+`power_now` values on this laptop are useless for this measurement and why the
+differential method was necessary.
+
+### The board does suspend, and video loss is the trigger
+
+    # power status
+    state: active
+    last reason: video-loss
+    suspend count: 1
+    resume count: 1
+
+The Glider suspends itself when the video signal goes away. This is consistent
+with the status LED going dark when the laptop sleeps, and it means the
+firmware's standby path is reachable in normal use — the open question is only
+whether *this* build takes the full 636 mW figure or stops partway.

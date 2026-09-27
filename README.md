@@ -71,14 +71,20 @@ USB telemetry channel. To the OS it is a plain DP sink on `drm_dp_aux3`;
 Hyprland sees `1600x1200@75Hz, XRGB8888, sdrBrightness 1` and stops there. The
 FPGA decides on its own what to refresh and when, and tells nobody.
 
-**Except — the board itself can be asked, over USB.** The Glider carries three
-INA3221 rail monitors that the STM32 polls every 100 ms, and its serial shell
-prints per-rail power (current / average / **max**, in mW) grouped as
-`MCU + IO`, `FPGA DDR`, `FPGA CORE`, `VIDEO IN`, `EPD HV`. That arrives as
-`/dev/ttyACM0` — present on this machine as `1209:ae86 Generic Glider` — and
-needs either the `uucp` group or root to read. It is not wired into anything
-here yet, but it would measure refresh cost and standby directly instead of
-inferring them. See `notes/sources.md`.
+**Except — the board measures itself, and can be asked over USB, but this
+firmware will not say.** The Glider carries three INA3221 rail monitors that the
+STM32 polls every 100 ms, and its source has a shell command printing per-rail
+power (cur/avg/**max**, in mW) as `MCU + IO`, `FPGA DDR`, `FPGA CORE`,
+`VIDEO IN`, `EPD HV`. It arrives as `/dev/ttyACM0` — present here as
+`1209:ae86 Generic Glider` — readable now that the user is in `uucp`.
+
+The catch: that command is `#ifdef GLIDER_DIAGNOSTIC_SHELL`, and the release
+build rejects it. This board answers `help`, `power`, `setcfg`, `setres`,
+`syslog`, `ver`, and nothing else. So the *hardware* is there and the *firmware
+hides it*; per-rail watts would need a diagnostic build flashed from the public
+repo. `syslog` still confirms the three INA3221s, the rail voltages, and the
+negotiated 5.0 V / 1.5 A input limit. Details and raw output in
+`notes/sources.md`.
 
 **Can — the difference between two states.**
 
@@ -467,20 +473,19 @@ themselves are sound.
 - **Nothing about refresh.** The panel is bistable: once the image is on the
   glass it stays there with no current at all. The 1.4 W above is the Glider
   board plus the FPGA sitting idle, holding a picture. A full repaint drives
-  the panel drivers hard for seconds and costs more energy than holding does.
-  This test was deliberately run with no repainting.
+  the panel drivers hard for seconds, and a modern high-resolution panel can
+  pull over 20 W in refresh peaks. This test was deliberately run with no
+  repainting, so the refresh cost is the largest gap in this document. Third
+  party metering brackets it at ~1.9 W scrolling and ~2 W with video.
 - **Nothing about the competition, measured on this machine.** The LCD figures
-  above are quoted from the community, not measured here. A real head-to-head
+  quoted above come from the community, not from here. A real head-to-head
   would switch the built-in panel and the Modos on and off the same static
   page, same session, same morning.
-- **Nothing about suspend**, beyond the LED going out. See test 5. Modos
-  publish a 636 mW standby figure for the board, but nothing here confirms
-  your firmware actually enters it.
-- **Nothing about refresh, still.** The one number we would most like, and the
-  one the board could hand us directly via its serial shell, unmeasured for
-  now — see `notes/sources.md`. Third-party metering suggests roughly
-  1.5 W holding, ~1.9 W scrolling, ~2 W with video, against a panel that can
-  pull over 20 W in refresh peaks.
+- **Nothing about suspend beyond the trigger.** The board reports
+  `last reason: video-loss` and `suspend count: 1`, so it does power down when
+  the laptop sleeps — consistent with the LED going out. Whether it reaches the
+  full 636 mW Modos measure for standby, or stops partway, is untested. See
+  test 5.
 
 ## Files
 
