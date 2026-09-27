@@ -404,6 +404,26 @@ reader workflow — long static documents, occasional page turns — that is a
 genuine win. On a scrolling one, the refresh cost is what would settle the
 argument, and it is test 3.
 
+### How that compares to other screens
+
+| screen | watts | what you get |
+| --- | --- | --- |
+| cheap ESP32 e-paper board (Waveshare, Inkplate, EPDiy) | ~0.3 | near zero to hold, but seconds to refresh, at 1–11 Hz |
+| **Modos 13" e-paper** | **1.4 (measured here)** | 1600x1200 at up to 75 Hz, 13.3" panel |
+| Framework 13 LCD, backlight low | ~1.8 | the screen you are replacing |
+| Framework 13 LCD, backlight 100% | ~4.3 | the same screen, bright enough for outdoors |
+
+Only the Modos row is measured by this project. The other three are quoted
+from the Framework community and Modos' own comparison table, which rates the
+Modos "High" power against MCU-based e-paper kits rated "Low".
+
+The ladder is the point. A bare e-paper board costs about a fifth of this one
+and a bright laptop screen about three times it, so the Modos sits in between:
+cheaper than a backlight you could read by, dearer than a bare panel. And the
+reason is not the paper — it is the bill for the speed. An FPGA, a DP bridge
+and a microcontroller, all awake, to redraw 13 inches at 75 Hz instead of
+seconds. The paper costs nothing to hold either way.
+
 ### Cross-checked against everyone else's numbers
 
 Three independent measurements, three different rigs, same answer:

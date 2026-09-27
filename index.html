@@ -139,6 +139,58 @@
   <li>For scale, a stock Framework 13 LCD is quoted around 1.8&nbsp;W with the backlight at 0% and 4.3&nbsp;W at 100% (community figures, different OS, order-of-magnitude). So this is cheaper than a backlight you would actually read by, and in the same league as a dimmed one.</li>
 </ul>
 
+<h2>How that compares to other screens</h2>
+<p>
+  Put the 1.4&nbsp;W next to some other screens and it stops looking like a
+  small number:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>screen</th>
+      <th class="num">watts</th>
+      <th>what you get</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>cheap ESP32 e-paper board<br><span class="note">Waveshare, Inkplate, EPDiy</span></td>
+      <td class="num">~0.3 W</td>
+      <td>near zero to hold, but seconds to refresh, at about 1&ndash;11&nbsp;Hz</td>
+    </tr>
+    <tr class="win">
+      <td><strong>Modos 13&Prime; e-paper</strong><br><span class="note">measured here</span></td>
+      <td class="num win">1.4 W</td>
+      <td>1600&times;1200 at up to 75&nbsp;Hz, a 13.3&Prime; panel</td>
+    </tr>
+    <tr>
+      <td>Framework 13 LCD, backlight low</td>
+      <td class="num">~1.8 W</td>
+      <td>the built-in screen you are replacing</td>
+    </tr>
+    <tr>
+      <td>Framework 13 LCD, backlight 100%</td>
+      <td class="num">~4.3 W</td>
+      <td>the same screen, bright enough to read outdoors</td>
+    </tr>
+  </tbody>
+</table>
+<p class="note">
+  Only the Modos figure is measured, by this project. The ESP32 boards and the
+  two LCD figures are quoted from the Framework community and Modos' own
+  comparison table, which rates the Modos "High" power against MCU-based
+  e-paper kits rated "Low".
+</p>
+<p>
+  The ladder is the interesting part. A cheap e-paper board costs about a
+  fifth of this one, and a bright laptop screen costs about three times it.
+  The Modos sits in between &mdash; cheaper than a backlight you could read by,
+  dearer than a bare e-paper panel &mdash; and the reason is not the paper. It
+  is the bill for the speed: an FPGA, a DisplayPort bridge and a
+  microcontroller, all awake, so that a 13&Prime; panel can redraw at 75&nbsp;Hz
+  instead of taking seconds. The paper costs nothing to hold either way.
+</p>
+
 <h2>The catch</h2>
 <p>
   The panel is <em>bistable</em>: once the image is on the glass it stays there
