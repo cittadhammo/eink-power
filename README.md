@@ -4,6 +4,10 @@ A quest log and a measuring instrument. Started 2026-09-26 on `framework13`
 (Framework Laptop 13, AMD Ryzen 5 7640U, mainboard `FRANMDCP05`, Omarchy,
 kernel 7.2.5-3-omarchy).
 
+**The one number, on its own page: <https://www.dhammacharts.org/eink-power/>**
+(that is this repo's GitHub Page — the account's user site holds the
+`dhammacharts.org` domain, so the project page is served from that host).
+
 ## The question people keep asking
 
 > "Is the e-ink screen actually saving you battery life?"
