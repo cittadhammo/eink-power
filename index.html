@@ -144,12 +144,64 @@
   The panel is <em>bistable</em>: once the image is on the glass it stays there
   with no current at all. The 1.4&nbsp;W is the controller board and FPGA
   sitting idle, holding that picture. Refreshing the screen drives the panel
-  drivers hard for seconds and costs more energy than holding does.
+  drivers hard for seconds, and a modern high-resolution panel can pull
+  <strong>over 20&nbsp;W in refresh peaks</strong> &mdash; brief, but the
+  reason a mostly-static page is the right operating point.
 </p>
 <p>
   So 1.4&nbsp;W is the number for a reader workflow &mdash; long static
   documents, an occasional page turn &mdash; which is exactly where e-paper is
-  meant to win. It is not the number for scrolling.
+  meant to win. It is not the number for scrolling: third-party metering puts
+  scrolling at ~1.9&nbsp;W and video at ~2&nbsp;W.
+</p>
+
+<h2>Cross-checked against everyone else's numbers</h2>
+<p>
+  Three independent measurements, three different rigs, nobody coordinating,
+  and a total spread of 0.23&nbsp;W:
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>source</th>
+      <th>method</th>
+      <th class="num">active draw</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="win">
+      <td>this repo</td>
+      <td>laptop battery, monitor unplugged</td>
+      <td class="num win">1.44 W</td>
+    </tr>
+    <tr>
+      <td>Modos (Glider PR&nbsp;#15)</td>
+      <td>onboard INA3221, per rail, summed</td>
+      <td class="num">1.27 W</td>
+    </tr>
+    <tr>
+      <td>third party (lobste.rs)</td>
+      <td>USB-C power meter</td>
+      <td class="num">1.5 W</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Ours is the largest of the three, and it should be: we measure the whole
+  cable, they measure the board. The gap is most likely the laptop-side half
+  &mdash; DisplayPort link training, the video decoder's clocking, the GPU's
+  display engine leaving its low-power state &mdash; which lives on the
+  computer's side of the connector and so cannot appear in a rail table.
+</p>
+<p>
+  Modos' per-rail split is more interesting than the total. The panel itself is
+  the <em>cheapest</em> thing on the board: <strong>93&nbsp;mW of 1269&nbsp;mW,
+  7%</strong>, and that is a static image costing nothing to hold. The STM32
+  (575&nbsp;mW), the DisplayPort bridge (379&nbsp;mW) and the Spartan-6
+  (160&nbsp;mW) are the other 93% &mdash; which is the real answer to why an
+  e-paper screen needs an FPGA at all, and why Modos' own comparison table
+  rates this kit's consumption as <strong>"High"</strong> against MCU-based
+  competitors rated "Low".
 </p>
 
 <h2>A trap, if you measure this yourself</h2>

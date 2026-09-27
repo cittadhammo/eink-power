@@ -64,12 +64,21 @@ Two consequences that decide everything:
 Run `./bin/einkpower.py doctor` to regenerate this on your box. Saved output:
 `results/doctor.txt`.
 
-**Cannot — the panel is a black box.** No panel power, current, refresh count,
-VCOM waveform, temperature or per-region activity is exposed anywhere. There
-is no kernel driver for it, no ACPI device, no I2C endpoint, no USB telemetry
-channel. To the OS it is a plain DP sink on `drm_dp_aux3`; Hyprland sees
-`1600x1200@75Hz, XRGB8888, sdrBrightness 1` and stops there. The FPGA decides
-on its own what to refresh and when, and tells nobody.
+**Cannot — the panel is a black box to the OS.** No panel power, current,
+refresh count, VCOM waveform, temperature or per-region activity is exposed
+anywhere. There is no kernel driver for it, no ACPI device, no I2C endpoint, no
+USB telemetry channel. To the OS it is a plain DP sink on `drm_dp_aux3`;
+Hyprland sees `1600x1200@75Hz, XRGB8888, sdrBrightness 1` and stops there. The
+FPGA decides on its own what to refresh and when, and tells nobody.
+
+**Except — the board itself can be asked, over USB.** The Glider carries three
+INA3221 rail monitors that the STM32 polls every 100 ms, and its serial shell
+prints per-rail power (current / average / **max**, in mW) grouped as
+`MCU + IO`, `FPGA DDR`, `FPGA CORE`, `VIDEO IN`, `EPD HV`. That arrives as
+`/dev/ttyACM0` — present on this machine as `1209:ae86 Generic Glider` — and
+needs either the `uucp` group or root to read. It is not wired into anything
+here yet, but it would measure refresh cost and standby directly instead of
+inferring them. See `notes/sources.md`.
 
 **Can — the difference between two states.**
 
@@ -262,6 +271,12 @@ fullscreen pager — because a static screen is the best case for e-paper and
 an animating one is the worst. The gap between those two rows is the real
 story of e-ink on a laptop.
 
+**Better than all of that, if you can get at the board's serial shell:** the
+Glider reports its own rails, including the `EPD HV` maximum, so a repaint's
+real cost can be watched directly instead of inferred from the battery. See
+"What this machine can and cannot tell you" and `notes/sources.md`. Nobody has
+wired that up here yet.
+
 `ab-test` is scriptable, so any two machine states can be A/B'd, not just
 DPMS. The refresh rate is the obvious second one, and it is the lever the
 whole e-paper trade-off turns on:
@@ -305,6 +320,13 @@ nights:
 3. repeat with the monitor **unplugged**
 
 Two nights, one number each.
+
+Before spending two nights on that: Modos publish a measured **636 mW standby
+figure for the whole board**, so the most that perfect standby mode could ever
+save you is about 0.64 W, and most of that is the STM32 staying awake to keep
+the USB TTY responsive. And the board's serial shell reports the same rails on
+demand, which would answer this in a second rather than two nights — see
+"Except — the board itself can be asked" above.
 
 ## Results
 
@@ -376,6 +398,46 @@ reader workflow — long static documents, occasional page turns — that is a
 genuine win. On a scrolling one, the refresh cost is what would settle the
 argument, and it is test 3.
 
+### Cross-checked against everyone else's numbers
+
+Three independent measurements, three different rigs, same answer:
+
+| source | method | active draw |
+| --- | --- | --- |
+| **this repo** | laptop battery, monitor unplugged | **1.44 W** |
+| Modos (Glider PR #15) | onboard INA3221, per rail, summed | **1.27 W** |
+| a third party (lobste.rs) | USB-C power meter | **1.5 W** |
+
+Nobody coordinated, and the spread is 0.23 W. Our figure is the *largest* of
+the three, and it should be: we measure the whole cable, they measure the
+board. The ~0.17 W difference is most likely the laptop-side half of the cost
+— DisplayPort link training, the video decoder's clocking, the GPU's display
+engine coming out of its low-power state — which lives on the computer's side
+of the connector and so cannot appear in the board's rail table.
+
+Modos' own per-rail split for the active case, which is more interesting than
+the total:
+
+| rail | mW | what it is |
+| --- | --- | --- |
+| MCU + IO | 574.9 | the STM32H750, awake to keep the USB TTY responsive |
+| VIDEO IN | 378.8 | the PTN3460 DisplayPort-to-LVDS bridge |
+| FPGA CORE | 159.7 | the Spartan-6 running Caster |
+| EPD high voltage | 92.7 | the panel's drive rails — idle, holding an image |
+| FPGA DDR | 62.6 | the framebuffer |
+
+**The panel is the cheapest thing on the board.** 93 mW of 1269 mW is 7% of the
+budget, and that 93 mW is a static image costing nothing to hold. The MCU, the
+video bridge and the FPGA together are the other 93% — which is the real
+answer to "why does an e-paper screen need an FPGA", and why CrowdSupply's own
+comparison table rates this kit's power consumption as **"High"** against
+MCU-based competitors rated "Low".
+
+Their standby figure, same rails, is **636 mW (-50%)**, and it is dominated by
+the same 502 mW MCU that will not go to sleep. So the honest ceiling on what
+standby mode could ever save is about 0.63 W, not the 1.4 W that the cable
+pull test suggests.
+
 ### Earlier runs, and the battery itself
 
 The first two logs, both with this analysis session as the workload, so a
@@ -411,7 +473,14 @@ themselves are sound.
   above are quoted from the community, not measured here. A real head-to-head
   would switch the built-in panel and the Modos on and off the same static
   page, same session, same morning.
-- **Nothing about suspend**, beyond the LED going out. See test 5.
+- **Nothing about suspend**, beyond the LED going out. See test 5. Modos
+  publish a 636 mW standby figure for the board, but nothing here confirms
+  your firmware actually enters it.
+- **Nothing about refresh, still.** The one number we would most like, and the
+  one the board could hand us directly via its serial shell, unmeasured for
+  now — see `notes/sources.md`. Third-party metering suggests roughly
+  1.5 W holding, ~1.9 W scrolling, ~2 W with video, against a panel that can
+  pull over 20 W in refresh peaks.
 
 ## Files
 

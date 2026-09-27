@@ -73,3 +73,87 @@ Fetched 2026-09-26.
   rather than calibrated.
 - `btop` is installed; without root it cannot read RAPL, so it adds nothing
   here.
+
+## Published Modos power figures, and how they compare
+
+Three independent sets of numbers exist. All of them were gathered by people
+other than us, and all three land in the same place.
+
+### 1. Modos' own measurement, per rail (the good one)
+
+`Modos-Labs/Glider` PR #15 ("Implement Native Standby Mode and DisplayPort
+Wakeup Handshake"), in a review comment. Measured with the board's own INA3221
+current/voltage sensors, before and after entering standby:
+
+| Rail / Component | Active (mW) | Standby (mW) | Delta (mW) |
+|---|---|---|---|
+| EPD high-voltage rails | 92.7 | 0.0 | -92.7 |
+| Video receiver (VIDEO IN) | 378.8 | 21.2 | -357.6 |
+| FPGA core | 159.7 | 88.2 | -71.5 |
+| DDR3 memory | 62.6 | 24.5 | -38.1 |
+| MCU + IO | 574.9 | 502.2 | -72.7 |
+| **Total board** | **1268.7** | **636.1** | **-632.6 (-50%)** |
+
+The author notes this PR was superseded by upstream's native power manager.
+Note the MCU is the single biggest consumer even in standby (502 mW) — it
+stays awake to keep the USB TTY responsive.
+  https://github.com/Modos-Labs/Glider/pull/15
+
+### 2. An independent USB-C power meter
+
+A comment on lobste.rs ("How I made a 60fps Eink monitor, the Modos Flow"),
+using an ATORCH AT085 USB-C interposer, explicitly labelled approximate:
+**~1.5 W** with a near-static screen, **~1.9 W** scrolling web content, and
+**~2 W** with video playing and full-screen wipes. No difference noticed
+between reading/typing/watching/browsing modes.
+  https://lobste.rs/s/wnn1ul/how_i_made_60fps_eink_monitor_modos_flow
+
+### 3. Modos' 2022 product blog (first generation, Micro-USB)
+
+"MicroUSB power input (consumes 1.5W~2W continuously)".
+  https://www.modos.tech/blog/modos-paper-monitor
+
+### Refresh, the part that is expensive but brief
+
+From the Glider technical deep dive: the EPD supply is rated for **1 A peak on
+the ±15 V rails**, and "modern high-resolution panels can consume **>20 W
+peak**". Those are peaks during a repaint, not averages — which is exactly why
+holding a static image is the cheap case and refreshing is not. The same
+document gives power as one of the three explicit reasons for choosing a
+Spartan-6 over a 7-series: super-low leakage at small design sizes, and an
+FPGA suspend feature.
+  https://www.crowdsupply.com/modos-tech/modos-paper-monitor/updates/a-technical-deep-dive-into-glider
+
+### Relative claims
+
+CrowdSupply's own comparison table rates the Modos Paper Dev Kit's power
+consumption as **"High"** against Waveshare e-Paper HAT, Inkplate 6 MOTION and
+EPDiy, all rated "Low" — the price paid for an FPGA and 75 Hz. Separately, the
+Flow comparison post states the Dev Kit "uses only half as much power as Flow"
+in the default configuration.
+  https://www.crowdsupply.com/modos-tech/modos-paper-monitor/
+  https://www.crowdsupply.com/modos-tech/modos-flow/updates/comparing-the-paper-dev-kit-with-flow
+
+## The board can report its own rails, and ours is connected
+
+The claim that this display offers no telemetry is only true of the *Linux*
+side. The board carries **three INA3221** rail monitors, polled every 100 ms by
+the STM32H750, and the firmware's serial shell has a command that prints
+per-rail power as current/average/**max** in mW, grouped as `MCU + IO`,
+`FPGA DDR`, `FPGA CORE`, `VIDEO IN`, `EPD HV` — the same five groups as the
+table above.
+
+  - `fw/User/power.c` — the INA3221 polling loop, 100 ms period
+  - `fw/User/shell/shell_cmds.c` — the shell command that prints the rails
+  - The shell is reached over the USB CDC serial device; the README says
+    "on Linux probably /dev/ttyACM0"
+
+On this machine that device exists right now:
+
+    Bus 007 Device 006: ID 1209:ae86 Generic Glider
+    crw-rw---- 1 root uucp 166, 0 /dev/ttyACM0
+
+It is mode 0660 owned by group `uucp`, and the user is in neither `uucp` nor
+`dialout`, so reading it needs a group change or root. That is the one thing
+standing between us and direct per-rail measurement, which would answer the
+refresh-cost and standby questions without unplugging anything.
