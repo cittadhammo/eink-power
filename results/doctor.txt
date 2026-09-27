@@ -1,0 +1,31 @@
+MACHINE
+  product_name     Laptop 13 (AMD Ryzen 7040Series)
+  board_name       FRANMDCP05
+  product_version  A5
+  kernel           7.2.5-3-omarchy
+  running_on_batt  yes
+  hwmon BAT1       /sys/class/hwmon/hwmon2
+  hwmon amdgpu     /sys/class/hwmon/hwmon4
+
+POWER SIGNALS AVAILABLE
+  battery pack power      12.4262 W   (16286 mV x 763 mA)  <- the only trustworthy system power figure on battery
+  SoC package power       6.491 W instantaneous / 6.761 W averaged  <- amdgpu SMU, SoC only, excludes display
+  USBC000:001_v            0.0
+  USBC000:001_w            0.0
+  USBC000:002_v            0.0
+  USBC000:002_w            0.0
+  USBC000:003_v            5.0
+  USBC000:003_w            7.5
+  USBC000:004_v            5.0
+  USBC000:004_w            7.5
+
+DISPLAY SIGNALS AVAILABLE
+  /sys/class/backlight    EMPTY -> no backlight, no frontlight
+  card1-DP-3       dpms=On   enabled=enabled name='Paper Monitor'
+  panel power / refresh telemetry: NOT EXPOSED (black box, see README)
+
+VERDICT
+  Per-panel watts cannot be read. Measure differentially: run the same
+  workload with the panel in state A and state B, compare battery_w.
+  Available packages that add nothing here: powertop (its display
+  backlight estimate is meaningless when /sys/class/backlight is empty).

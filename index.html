@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How much is the e-paper screen costing this laptop?</title>
+<meta name="description" content="Measuring what a Modos 13-inch e-paper display actually draws on a Framework Laptop 13. Answer: about 1.4 watts.">
+<style>
+  :root {
+    --paper: #f4f1ea;
+    --ink: #1a1a1a;
+    --muted: #6b6659;
+    --rule: #d8d2c4;
+    --accent: #7a6a4f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14161a;
+      --ink: #e8e6e1;
+      --muted: #8f9299;
+      --rule: #2b2f36;
+      --accent: #c2b393;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 5rem;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: 1.6rem; line-height: 1.3; margin: 0 0 .5rem; font-weight: 700; }
+  h2 { font-size: 1.05rem; margin: 3rem 0 .75rem; font-weight: 700; }
+  p { margin: 0 0 1rem; }
+  .sub { color: var(--muted); margin-bottom: 2.5rem; }
+  .big {
+    font-size: 3.4rem;
+    line-height: 1;
+    font-weight: 700;
+    margin: 0 0 .35rem;
+  }
+  .unit { font-size: 1.4rem; color: var(--muted); }
+  .lede { color: var(--muted); margin: 0 0 2.5rem; }
+  table { border-collapse: collapse; width: 100%; margin: 0 0 1rem; font-size: .9rem; }
+  th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--rule); }
+  th { color: var(--muted); font-weight: 400; }
+  td.num, th.num { text-align: right; }
+  .win { font-weight: 700; }
+  .note { color: var(--muted); font-size: .88rem; }
+  ul { padding-left: 1.2rem; margin: 0 0 1rem; }
+  li { margin-bottom: .55rem; }
+  code {
+    background: color-mix(in srgb, var(--ink) 8%, transparent);
+    padding: .1em .35em;
+    border-radius: 3px;
+    font-size: .9em;
+  }
+  pre {
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    padding: .9rem 1rem;
+    overflow-x: auto;
+    border-radius: 4px;
+    font-size: .8rem;
+    line-height: 1.5;
+    margin: 0 0 1rem;
+  }
+  a { color: var(--accent); }
+  hr { border: 0; border-top: 1px solid var(--rule); margin: 2.5rem 0; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>How much is the e-paper screen costing this laptop?</h1>
+<p class="sub">
+  A Modos Paper Dev Kit 13&Prime; (Carta 1000, 1600&times;1200@75&thinsp;Hz) on a Framework
+  Laptop 13, AMD Ryzen 5 7640U, Omarchy, kernel 7.2.5-3-omarchy.
+  Measured 2026-09-27.
+</p>
+
+<h2>The answer</h2>
+<p class="big">1.4<span class="unit">&thinsp;W</span></p>
+<p class="lede">
+  That is what the display draws out of the battery, continuously, to hold a
+  still image.
+</p>
+
+<p>
+  The kit takes video <em>and</em> power through a single USB-C cable, so
+  pulling that cable removes the entire e-paper subsystem &mdash; panel,
+  controller board, FPGA, and the GPU&rsquo;s display pipeline &mdash; in one
+  move. The difference in battery draw between the plugged and unplugged
+  states is the display&rsquo;s cost, with no modelling required.
+</p>
+
+<h2>The run</h2>
+<table>
+  <thead>
+    <tr>
+      <th>phase</th>
+      <th class="num">draw</th>
+      <th class="num">vs connected</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>monitor connected</td>
+      <td class="num">6.66 W</td>
+      <td class="num">&mdash;</td>
+    </tr>
+    <tr class="win">
+      <td>monitor unplugged</td>
+      <td class="num">5.22 W</td>
+      <td class="num win">&minus;1.44 W</td>
+    </tr>
+    <tr>
+      <td>plugged back in</td>
+      <td class="num">6.75 W</td>
+      <td class="num">+0.09 W</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  Three independent estimators agree: 1.44&nbsp;W (settled mean), 1.38&nbsp;W
+  (median), 1.50&nbsp;W (quietest 5% of each phase). The connected phase held
+  a standard deviation of 0.04&nbsp;W over 65&nbsp;s, so the machine was quiet
+  enough to resolve a 1.4&nbsp;W effect, and the third phase plugged the monitor
+  back in and returned the draw to within 0.09&nbsp;W of where it started &mdash;
+  which drift and coincidence do not do.
+</p>
+
+<h2>What that means day to day</h2>
+<ul>
+  <li>About <strong>2.4% of a 60.6&nbsp;Wh pack per hour</strong>, holding a static image.</li>
+  <li>Whole-machine runtime goes <strong>9.1&nbsp;h &rarr; 11.6&nbsp;h</strong>, so roughly <strong>21% of available working time</strong>.</li>
+  <li>For scale, a stock Framework 13 LCD is quoted around 1.8&nbsp;W with the backlight at 0% and 4.3&nbsp;W at 100% (community figures, different OS, order-of-magnitude). So this is cheaper than a backlight you would actually read by, and in the same league as a dimmed one.</li>
+</ul>
+
+<h2>The catch</h2>
+<p>
+  The panel is <em>bistable</em>: once the image is on the glass it stays there
+  with no current at all. The 1.4&nbsp;W is the controller board and FPGA
+  sitting idle, holding that picture. Refreshing the screen drives the panel
+  drivers hard for seconds and costs more energy than holding does.
+</p>
+<p>
+  So 1.4&nbsp;W is the number for a reader workflow &mdash; long static
+  documents, an occasional page turn &mdash; which is exactly where e-paper is
+  meant to win. It is not the number for scrolling.
+</p>
+
+<h2>A trap, if you measure this yourself</h2>
+<p>
+  Unplug the cable and the draw does not step down. It decays from about
+  6.9&nbsp;W to 5.1&nbsp;W over roughly a minute, as the machine relaxes into
+  the new power profile:
+</p>
+<pre>6.74 6.89 6.89 6.89 6.82 7.30 7.39 7.26
+7.04 6.95 6.86 6.76 6.67 6.60 6.53 6.48
+6.41 6.32 6.26 6.12 6.05 6.01 5.95 5.89
+5.84 5.78 5.72 5.66 5.60 5.58 5.54 5.54
+...                            settling at ~5.10</pre>
+<p>
+  Averaging the whole window naively reports &minus;1.09&nbsp;W and understates
+  the effect by about a third. A 30-second window would have been badly wrong.
+</p>
+
+<h2>Measure it yourself</h2>
+<pre>git clone https://github.com/cittadhammo/eink-power
+cd eink-power
+systemd-inhibit --what=idle:sleep --why="eink power test" \
+  ./bin/einkpower.py unplug-test</pre>
+<p>
+  It samples battery power at 1&nbsp;Hz from the hardware monitor, walks you
+  through the phases, beeps when each window closes, and prints the table
+  above. A <code>verify</code> subcommand first checks the current sensor
+  against the battery&rsquo;s own coulomb counter, so you know the wattage
+  figures are real before you believe them.
+</p>
+
+<hr>
+<p class="note">
+  Full method, the things that can and cannot be measured on a Linux laptop,
+  and the open questions:
+  <a href="https://github.com/cittadhammo/eink-power">github.com/cittadhammo/eink-power</a>.
+  Not yet measured: the cost of a refresh, and a head-to-head against the
+  built-in LCD on this machine.
+</p>
+
+</main>
+</body>
+</html>
